@@ -250,7 +250,9 @@ class NgSpice:
 
     def get_cur_plot(self):
         """Returns the current plot."""
-        return cast(self.ng.ngSpice_CurPlot(), c_char_p).value
+        curplot = ng.ngSpice_CurPlot
+        curplot.restype = c_char_p        
+        return curplot()
 
     def get_all_plots(self):
         """Returns a list of all the available plots."""
