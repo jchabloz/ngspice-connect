@@ -250,7 +250,7 @@ class NgSpice:
 
     def get_cur_plot(self):
         """Returns the current plot."""
-        curplot = ng.ngSpice_CurPlot
+        curplot = self.ng.ngSpice_CurPlot
         curplot.restype = c_char_p        
         return curplot()
 
