@@ -240,6 +240,11 @@ class NgSpice:
                 raise TypeError
         self.ng.ngSpice_Command(cmd)
 
+    def source(self, filepath):
+        """Loads a spice command file."""
+        #TODO: check filepath
+        self.send_cmd("source " + filepath)
+
     def run(self):
         """Sends the run command to ngspice."""
         self.send_cmd("run")
@@ -317,10 +322,11 @@ class NgSpice:
         df = DataFrame()
         for v in vec_names:
             vec_info = self.get_vec_info(v)
-            match_branch = re.search(r"(\w+)#branch$", v)
+            vec_name = vec_info.v_name.decode()
+            match_branch = re.search(r"(\w+)#branch$", vec_name)
             if match_branch:
-                v = "i(" + match_branch.group(1) + ")"
-            df[v] = vec_info[:]
+                vec_name = "i(" + match_branch.group(1) + ")"
+            df[vec_name] = vec_info[:]
         return df
 
 #EOF
