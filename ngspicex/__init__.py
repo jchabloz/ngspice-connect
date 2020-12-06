@@ -280,10 +280,7 @@ class NgSpice:
         res = []
         i = 0
         while pvecs[i]:
-            if plot:
-                res.append(plot + "." + pvecs[i].decode())
-            else:
-                res.append(pvecs[i].decode())
+            res.append(plot.decode() + "." + pvecs[i].decode())
             i += 1
         return res
 
