@@ -200,11 +200,14 @@ class NgSpice:
         print("ng_send_init_evt_data")
         return 0
 
-    def __init__(self):
+    def __init__(self, libpath=None):
 
-        self.nglib = find_library('ngspice')
-        if not self.nglib: 
-            raise ValueError("Could not find ngspice library in the system")
+        if libpath:
+            self.nglib = libpath
+        else:
+            self.nglib = find_library('ngspice')
+            if not self.nglib: 
+                raise ValueError("Could not find ngspice library in the system")
 
         self.ng = CDLL(self.nglib)
         
