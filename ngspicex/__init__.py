@@ -105,8 +105,6 @@ class VecValuesAll(Structure):
 #******************************************************************************
 class NgSpice:
 
-    _callbacks = []
-
     def write(self, msg):
         if self.pbar:
             self.pbar.write(msg)
@@ -123,6 +121,9 @@ class NgSpice:
     # get garbage collected. In our case, I use the self._callbacks[] array to
     # store them.
     #**************************************************************************
+
+    _callbacks = {}
+
     def _ng_send_char(self):
         """Factory function -- returns a callback function to receive stdout/stderr
         output from libngspice.
@@ -170,21 +171,42 @@ class NgSpice:
         
         return ng_send_stat_inner
     
-    @CFUNCTYPE(c_int, c_int, c_bool, c_bool, c_int, c_void_p)
-    def ng_controlled_exit(status, unload, exit, libid, caller):
-        print("ng_controlled_exit: {} (unload={}, exit={})".format(status, unload, exit))
-        return 0
+    def _ng_controlled_exit(self):
+        """Factory function -- returns a callback function called from shared library
+        on exit, e.g. when using the quit command.
+        """
 
-    @CFUNCTYPE(c_int, POINTER(VecValuesAll), c_int, c_int, c_void_p)
-    def ng_send_data(pvecvaluesall, count, libid, caller):
-        #print("ng_send_data")
-        return 0
-    
-    @CFUNCTYPE(c_int, POINTER(VecInfoAll), c_int, c_void_p)
-    def ng_send_init_data(values, libid, caller):
-        print("ng_send_init_data")
-        return 0
-    
+        @CFUNCTYPE(c_int, c_int, c_bool, c_bool, c_int, c_void_p)
+        def ng_controlled_exit_inner(status, unload, exit, libid, caller):
+            print("ng_controlled_exit: {} (unload={}, exit={})".format(status, unload, exit))
+            return 0
+        
+        return ng_controlled_exit_inner
+
+    def _ng_send_data(self):
+        """Factory function -- returns a callback function called from shared library
+        at each simulated data point.
+        """
+
+        @CFUNCTYPE(c_int, POINTER(VecValuesAll), c_int, c_int, c_void_p)
+        def ng_send_data_inner(pvecvaluesall, count, libid, caller):
+            return 0
+        
+        return ng_send_data_inner
+
+    def _ng_send_init_data(self):
+        """Factory function -- returns a callback function called from shared library
+        at simulation initialization.
+        """
+
+        @CFUNCTYPE(c_int, POINTER(VecInfoAll), c_int, c_void_p)
+        def ng_send_init_data_inner(values, libid, caller):
+            print("ng_send_init_data")
+            return 0
+
+        return ng_send_init_data_inner
+
+
     @CFUNCTYPE(c_int, c_bool, c_int, c_void_p)
     def ng_bg_thread_running(is_running, libid, caller):
         print("ng_bg_thread_running")
@@ -220,16 +242,19 @@ class NgSpice:
             
         #We need to assign the callbacks to inner variables in order to avoid them
         #to get garbage collected and the program to abort with SIGSEV!!!
-        self._callbacks.append(self._ng_send_char())
-        self._callbacks.append(self._ng_send_stat())
+        self._callbacks["send_char"] = self._ng_send_char()
+        self._callbacks["send_stat"] = self._ng_send_stat()
+        self._callbacks["exit"] = self._ng_controlled_exit()
+        self._callbacks["send_data"] = self._ng_send_data()
+        self._callbacks["send_init_data"] = self._ng_send_init_data()
         
         #Initialize
         self.ng.ngSpice_Init(
-            self._callbacks[0],
-            self._callbacks[1],
-            self.ng_controlled_exit,
-            self.ng_send_data,
-            self.ng_send_init_data,
+            self._callbacks["send_char"],
+            self._callbacks["send_stat"],
+            self._callbacks["exit"],
+            self._callbacks["send_data"],
+            self._callbacks["send_init_data"],
             self.ng_bg_thread_running,
             None
         )
