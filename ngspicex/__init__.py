@@ -1,31 +1,34 @@
-#******************************************************************************
+# *****************************************************************************
 # This python script uses ctypes to implement C bindings for the shared library
 # provided by ngspice. It allows to run a simulation and use all the power of
 # Python to post-process and plots the results.
 #
 # References:
 # [1] https://docs.python.org/3.8/library/ctypes.html#callback-functions
-# [2] https://stackoverflow.com/questions/7259794/how-can-i-get-methods-to-work-as-callbacks-with-python-ctypes 
-#******************************************************************************
+# [2] https://stackoverflow.com/questions/7259794/how-can-i-get-methods-to-work-as-callbacks-with-python-ctypes
+# *****************************************************************************
 from ctypes import Structure
-from ctypes import c_double, c_char_p, c_int, c_short, c_int, c_bool, c_void_p
+from ctypes import c_double, c_char_p, c_short, c_int, c_bool, c_void_p
 from ctypes import POINTER, CFUNCTYPE, CDLL, cast
 from ctypes.util import find_library
 
-from sys import stdout, stderr
+from sys import stdout
+from os import path
 import re
 from tqdm import tqdm
 from pandas import Series, DataFrame
 
-#******************************************************************************
+
+# *****************************************************************************
 # Classes inheriting from ctypes Structure used to describe types passed to
 # callback functions or received from exported functions.
-#******************************************************************************
+# *****************************************************************************
 class NgComplex(Structure):
     _fields_ = [
         ("cx_real", c_double),
         ("cx_imag", c_double)
     ]
+
 
 class VectorInfo(Structure):
     _fields_ = [
@@ -42,7 +45,7 @@ class VectorInfo(Structure):
 
     def __len__(self):
         return self.v_length
-    
+
     def __getitem__(self, key):
         """Allows vector data indexing and slicing."""
         if isinstance(key, int):
@@ -60,10 +63,11 @@ class VectorInfo(Structure):
         else:
             raise TypeError
         return self.v_realdata[key]
-    
+
     def as_series(self):
         """Return a pandas Series object with vector data and name."""
         return Series(name=self.v_name.decode(), data=self[:])
+
 
 class VecInfo(Structure):
     _fields_ = [
@@ -73,6 +77,7 @@ class VecInfo(Structure):
         ("pdvec", c_void_p),
         ("pdvecscale", c_void_p)
     ]
+
 
 class VecInfoAll(Structure):
     _fields_ = [
@@ -84,6 +89,7 @@ class VecInfoAll(Structure):
         ("vecs", POINTER(VecInfo))
     ]
 
+
 class VecValues(Structure):
     _fields_ = [
         ("name", c_char_p),
@@ -93,6 +99,7 @@ class VecValues(Structure):
         ("is_complex", c_bool)
     ]
 
+
 class VecValuesAll(Structure):
     _fields_ = [
         ("veccount", c_int),
@@ -100,9 +107,10 @@ class VecValuesAll(Structure):
         ("vecsa", POINTER(VecValues))
     ]
 
-#******************************************************************************
-# Class NgSpice
-#******************************************************************************
+
+# *****************************************************************************
+# Class NgSpice - Main class
+# *****************************************************************************
 class NgSpice:
 
     def write(self, msg):
@@ -111,7 +119,7 @@ class NgSpice:
         else:
             stdout.write(msg + '\n')
 
-    #**************************************************************************
+    # *************************************************************************
     # Callback functions
     # We define callback functions using the CFUNCTYPE factory as a decorator
     # (see [1]).
@@ -120,7 +128,7 @@ class NgSpice:
     # factory needs to be assigned to an inner variable in order for it not to
     # get garbage collected. In our case, I use the self._callbacks[] array to
     # store them.
-    #**************************************************************************
+    # *************************************************************************
 
     _callbacks = {}
 
@@ -150,7 +158,8 @@ class NgSpice:
         @CFUNCTYPE(c_int, c_char_p, c_int, c_void_p)
         def ng_send_stat_inner(value, libid, caller):
 
-            match_percent = re.search(r"(\w+):\s+([0-9]*.?[0-9]*)%\s*$", value.decode()) 
+            match_percent = re.search(
+                r"(\w+):\s+([0-9]*.?[0-9]*)%\s*$", value.decode())
             if match_percent:
                 name = match_percent.group(1)
                 percentage = float(match_percent.group(2))
@@ -163,14 +172,15 @@ class NgSpice:
                         self.pbar.close()
                         self.pbar = None
                 else:
-                    self.pbar = tqdm(file=stdout, desc=name, total=100.0, unit='%')
+                    self.pbar = tqdm(
+                        file=stdout, desc=name, total=100.0, unit='%')
                     self.pbar_value = 0.0
             else:
                 self.write(value.decode())
             return 0
-        
+
         return ng_send_stat_inner
-    
+
     def _ng_controlled_exit(self):
         """Factory function -- returns a callback function called from shared library
         on exit, e.g. when using the quit command.
@@ -178,9 +188,10 @@ class NgSpice:
 
         @CFUNCTYPE(c_int, c_int, c_bool, c_bool, c_int, c_void_p)
         def ng_controlled_exit_inner(status, unload, exit, libid, caller):
-            print("ng_controlled_exit: {} (unload={}, exit={})".format(status, unload, exit))
+            print("ng_controlled_exit: {} (unload={}, exit={})".format(
+                status, unload, exit))
             return 0
-        
+
         return ng_controlled_exit_inner
 
     def _ng_send_data(self):
@@ -191,7 +202,7 @@ class NgSpice:
         @CFUNCTYPE(c_int, POINTER(VecValuesAll), c_int, c_int, c_void_p)
         def ng_send_data_inner(pvecvaluesall, count, libid, caller):
             return 0
-        
+
         return ng_send_data_inner
 
     def _ng_send_init_data(self):
@@ -215,33 +226,35 @@ class NgSpice:
         def ng_bg_thread_running_inner(is_running, libid, caller):
             print("ng_bg_thread_running")
             return 0
-        
+
         return ng_bg_thread_running_inner
-    
+
     def _ng_send_evt_data(self):
         """Factory function -- returns a callback function called from shared library.
         TODO: document functionality
         """
 
-        @CFUNCTYPE(c_int, c_int, c_double, c_double, c_char_p, c_void_p, c_int, c_int, c_int, c_void_p)
-        def ng_send_evt_data_inner(node_index, sim_time, value, print_value, data, size, mode, libid, caller):
+        @CFUNCTYPE(c_int, c_int, c_double, c_double, c_char_p, c_void_p, c_int,
+                   c_int, c_int, c_void_p)
+        def ng_send_evt_data_inner(node_index, sim_time, value, print_value,
+                                   data, size, mode, libid, caller):
             print("ng_send_evt_data")
             return 0
 
         return ng_send_evt_data_inner
 
-    def _ng_send_init_evt_data(self):    
+    def _ng_send_init_evt_data(self):
         """Factory function -- returns a callback function called from shared library.
         TODO: document functionality
         """
 
         @CFUNCTYPE(c_int, c_int, c_int, c_char_p, c_char_p, c_int, c_void_p)
-        def ng_send_init_evt_data_inner(node_index, max_index, name, udn_name, libid, caller):
+        def ng_send_init_evt_data_inner(node_index, max_index, name, udn_name,
+                                        libid, caller):
             print("ng_send_init_evt_data")
             return 0
 
         return ng_send_init_evt_data_inner
-
 
     def __init__(self, libpath=None):
 
@@ -249,28 +262,29 @@ class NgSpice:
             self.nglib = libpath
         else:
             self.nglib = find_library('ngspice')
-            if not self.nglib: 
-                raise ValueError("Could not find ngspice library in the system")
+            if not self.nglib:
+                raise ValueError(
+                    "Could not find ngspice library in the system")
 
         self.ng = CDLL(self.nglib)
-        
-        #Progress bar
+
+        # Progress bar
         self.pbar = None
         self.pbar_value = 0.0
 
-        #Initialize pointer to vec
-        self.pvecvaluesall = None   
-            
-        #We need to assign the callbacks to inner variables in order to avoid them
-        #to get garbage collected and the program to abort with SIGSEV!!!
+        # Initialize pointer to vec
+        self.pvecvaluesall = None
+
+        # We need to assign the callbacks to inner variables in order to avoid
+        # them to get garbage collected and the program to abort with SIGSEV!!!
         self._callbacks["send_char"] = self._ng_send_char()
         self._callbacks["send_stat"] = self._ng_send_stat()
         self._callbacks["exit"] = self._ng_controlled_exit()
         self._callbacks["send_data"] = self._ng_send_data()
         self._callbacks["send_init_data"] = self._ng_send_init_data()
         self._callbacks["bg_thread_running"] = self._ng_bg_thread_running()
-        
-        #Initialize
+
+        # Initialize
         self.ng.ngSpice_Init(
             self._callbacks["send_char"],
             self._callbacks["send_stat"],
@@ -292,7 +306,8 @@ class NgSpice:
 
     def source(self, filepath):
         """Loads a spice command file."""
-        #TODO: check filepath
+        if not path.isfile(filepath):
+            raise FileNotFoundError
         self.send_cmd("source " + filepath)
 
     def run(self):
@@ -306,7 +321,7 @@ class NgSpice:
     def get_cur_plot(self):
         """Returns the current plot."""
         curplot = self.ng.ngSpice_CurPlot
-        curplot.restype = c_char_p        
+        curplot.restype = c_char_p
         return curplot()
 
     def get_all_plots(self):
@@ -332,7 +347,7 @@ class NgSpice:
                 plot = plot.encode('utf-8')
             else:
                 raise TypeError
-                
+
         pvecs = cast(self.ng.ngSpice_AllVecs(plot), POINTER(c_char_p))
         res = []
         i = 0
@@ -352,17 +367,21 @@ class NgSpice:
                 vector = vector.encode('utf-8')
             else:
                 raise TypeError
-        vec_info = cast(self.ng.ngGet_Vec_Info(vector), POINTER(VectorInfo)).contents
+        vec_info = cast(
+            self.ng.ngGet_Vec_Info(vector),
+            POINTER(VectorInfo)).contents
         return vec_info
 
     def get_vector(self, vector):
         """Returns a simulated vector as a pandas Series object.
         Arguments:
         vector = vector name
-        A list of all available vector names for a given plot can be obtained by using the
-        get_all_vecs() function.
-        Using a simple vector name will return values for the currently active plot.
-        To access vectors from other plots, use <plot_name>.<vector_name> as argument.
+        A list of all available vector names for a given plot can be obtained
+        by using the get_all_vecs() function.
+        Using a simple vector name will return values for this vector in the
+        currently active plot.
+        To access vectors from other plots, use <plot_name>.<vector_name> as
+        argument.
         """
         vec_info = self.get_vec_info(vector)
         return vec_info.as_series()
@@ -379,4 +398,4 @@ class NgSpice:
             df[vec_name] = vec_info[:]
         return df
 
-#EOF
+# EOF
