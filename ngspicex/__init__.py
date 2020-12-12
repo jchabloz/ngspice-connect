@@ -5,7 +5,7 @@
 #
 # References:
 # [1] https://docs.python.org/3.8/library/ctypes.html#callback-functions
-# [2] https://stackoverflow.com/questions/7259794/how-can-i-get-methods-to-work-as-callbacks-with-python-ctypes
+# [2] https://stackoverflow.com/questions/7259794/
 # *****************************************************************************
 from ctypes import Structure
 from ctypes import c_double, c_char_p, c_short, c_int, c_bool, c_void_p
@@ -24,6 +24,7 @@ from pandas import Series, DataFrame
 # callback functions or received from exported functions.
 # *****************************************************************************
 class NgComplex(Structure):
+    """Structure used to store a complex number."""
     _fields_ = [
         ("cx_real", c_double),
         ("cx_imag", c_double)
@@ -31,6 +32,7 @@ class NgComplex(Structure):
 
 
 class VectorInfo(Structure):
+    """Structure used to store a simulated vector data and info"""
     _fields_ = [
         ("v_name", c_char_p),
         ("v_type", c_int),
@@ -44,6 +46,7 @@ class VectorInfo(Structure):
         return "VectorInfo structure: " + self.v_name.decode()
 
     def __len__(self):
+        """Allows to query the length of a vector wiht the len() method"""
         return self.v_length
 
     def __getitem__(self, key):
@@ -56,10 +59,10 @@ class VectorInfo(Structure):
                 key = slice(key.start, len(self), key.step)
             if key.start:
                 if (key.start < 0):
-                    raise IndexError("Index undershoot")
+                    raise IndexError("Index cannot be negative")
             if key.stop:
                 if (key.stop > len(self)):
-                    raise IndexError("Index overshoot")
+                    raise IndexError("Index too large")
         else:
             raise TypeError
         return self.v_realdata[key]
@@ -114,6 +117,9 @@ class VecValuesAll(Structure):
 class NgSpice:
 
     def write(self, msg):
+        """Writes to stdout or progress bar.
+        Argument: msg -- Message to be written.
+        """
         if self.pbar:
             self.pbar.write(msg)
         else:
@@ -305,7 +311,7 @@ class NgSpice:
         self.ng.ngSpice_Command(cmd)
 
     def source(self, filepath):
-        """Loads a spice command file."""
+        """Loads (sources) a spice command file."""
         if not path.isfile(filepath):
             raise FileNotFoundError
         self.send_cmd("source " + filepath)
@@ -319,7 +325,7 @@ class NgSpice:
         self.send_cmd("quit")
 
     def get_cur_plot(self):
-        """Returns the current plot."""
+        """Returns the name of the current plot."""
         curplot = self.ng.ngSpice_CurPlot
         curplot.restype = c_char_p
         return curplot()
@@ -337,8 +343,8 @@ class NgSpice:
     def get_all_vecs(self, plot=None):
         """Returns a list of all available vectors for a given plot.
         Argument:
-        plot = name of the plot, either as a bytes array or string.
-        If plot is None (default), the current plot is used.
+        plot: name of the plot, either as a bytes array or string.
+        If plot is not defined or None, the current plot is used.
         """
         if not plot:
             plot = self.get_cur_plot()
@@ -358,35 +364,40 @@ class NgSpice:
 
     def get_vec_info(self, vector):
         """Calls the ngGet_Vec_Info() ngspice exported function and returns a
-        vector structure.
-        Caveat: each time it is called, the object gets replaced. Results need
-        to get stored somewhere else...
+        VectorInfo structure object.
+        Caveat: each time this method is used, the object actually gets
+        replaced.
         """
         if not isinstance(vector, bytes):
             if isinstance(vector, str):
                 vector = vector.encode('utf-8')
             else:
                 raise TypeError
-        vec_info = cast(
-            self.ng.ngGet_Vec_Info(vector),
-            POINTER(VectorInfo)).contents
+        vec_info = cast(self.ng.ngGet_Vec_Info(vector),
+                        POINTER(VectorInfo)).contents
         return vec_info
 
     def get_vector(self, vector):
         """Returns a simulated vector as a pandas Series object.
         Arguments:
-        vector = vector name
+        vector: vector name
         A list of all available vector names for a given plot can be obtained
         by using the get_all_vecs() function.
         Using a simple vector name will return values for this vector in the
         currently active plot.
-        To access vectors from other plots, use <plot_name>.<vector_name> as
-        argument.
+        To access vectors from other plots than the current one, use
+        <plot_name>.<vector_name> as argument.
         """
         vec_info = self.get_vec_info(vector)
         return vec_info.as_series()
 
     def get_all_vectors(self, plot=None):
+        """Returns all the available vectors for a given plot in a pandas
+        DataFrame object.
+        Arguments:
+        plot: name of the plot from which to collect available vectors.
+        If plot is not defined or None, the current plot is used.
+        """
         vec_names = self.get_all_vecs(plot)
         df = DataFrame()
         for v in vec_names:
