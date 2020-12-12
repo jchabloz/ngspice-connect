@@ -206,21 +206,42 @@ class NgSpice:
 
         return ng_send_init_data_inner
 
+    def _ng_bg_thread_running(self):
+        """Factory function -- returns a callback function called from shared library.
+        TODO: document functionality
+        """
 
-    @CFUNCTYPE(c_int, c_bool, c_int, c_void_p)
-    def ng_bg_thread_running(is_running, libid, caller):
-        print("ng_bg_thread_running")
-        return 0
+        @CFUNCTYPE(c_int, c_bool, c_int, c_void_p)
+        def ng_bg_thread_running_inner(is_running, libid, caller):
+            print("ng_bg_thread_running")
+            return 0
+        
+        return ng_bg_thread_running_inner
     
-    @CFUNCTYPE(c_int, c_int, c_double, c_double, c_char_p, c_void_p, c_int, c_int, c_int, c_void_p)
-    def ng_send_evt_data(node_index, sim_time, value, print_value, data, size, mode, libid, caller):
-        print("ng_send_evt_data")
-        return 0
-    
-    @CFUNCTYPE(c_int, c_int, c_int, c_char_p, c_char_p, c_int, c_void_p)
-    def ng_send_init_evt_data(node_index, max_index, name, udn_name, libid, caller):
-        print("ng_send_init_evt_data")
-        return 0
+    def _ng_send_evt_data(self):
+        """Factory function -- returns a callback function called from shared library.
+        TODO: document functionality
+        """
+
+        @CFUNCTYPE(c_int, c_int, c_double, c_double, c_char_p, c_void_p, c_int, c_int, c_int, c_void_p)
+        def ng_send_evt_data_inner(node_index, sim_time, value, print_value, data, size, mode, libid, caller):
+            print("ng_send_evt_data")
+            return 0
+
+        return ng_send_evt_data_inner
+
+    def _ng_send_init_evt_data(self):    
+        """Factory function -- returns a callback function called from shared library.
+        TODO: document functionality
+        """
+
+        @CFUNCTYPE(c_int, c_int, c_int, c_char_p, c_char_p, c_int, c_void_p)
+        def ng_send_init_evt_data_inner(node_index, max_index, name, udn_name, libid, caller):
+            print("ng_send_init_evt_data")
+            return 0
+
+        return ng_send_init_evt_data_inner
+
 
     def __init__(self, libpath=None):
 
@@ -247,6 +268,7 @@ class NgSpice:
         self._callbacks["exit"] = self._ng_controlled_exit()
         self._callbacks["send_data"] = self._ng_send_data()
         self._callbacks["send_init_data"] = self._ng_send_init_data()
+        self._callbacks["bg_thread_running"] = self._ng_bg_thread_running()
         
         #Initialize
         self.ng.ngSpice_Init(
@@ -255,7 +277,7 @@ class NgSpice:
             self._callbacks["exit"],
             self._callbacks["send_data"],
             self._callbacks["send_init_data"],
-            self.ng_bg_thread_running,
+            self._callbacks["bg_thread_running"],
             None
         )
 
