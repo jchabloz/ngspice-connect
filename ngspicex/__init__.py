@@ -321,11 +321,11 @@ class NgSpice:
         # strings. C equivalent would be char**.
         # We add 1 extra element to make sure that the array final element
         # is a NULL string, as required.
-        CircType = c_char_p * len(args) + 1
+        CircType = c_char_p * (len(args) + 1)
         circ_array = CircType()
 
         for i in range(len(args)):
-            if not isinstance(args, str):
+            if not isinstance(args[i], str):
                 raise ValueError
             circ_array[i] = args[i].encode('utf-8')
 
