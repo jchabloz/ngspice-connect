@@ -327,10 +327,10 @@ class NgSpice:
         CircType = c_char_p * (len(args) + 1)
         circ_array = CircType()
 
-        for i in range(len(args)):
-            if not isinstance(args[i], str):
+        for i, v in enumerate(args):
+            if not isinstance(v, str):
                 raise ValueError
-            circ_array[i] = args[i].encode('utf-8')
+            circ_array[i] = v.encode('utf-8')
 
         ret = self.ng.ngSpice_Circ(circ_array)
         if ret != 0:
