@@ -302,13 +302,36 @@ class NgSpice:
         )
 
     def send_cmd(self, cmd):
-        """Sends a spice command to the share ngspice library."""
+        """Sends a spice command to the shared ngspice library."""
         if not isinstance(cmd, bytes):
             if isinstance(cmd, str):
                 cmd = cmd.encode('utf-8')
             else:
                 raise TypeError
         self.ng.ngSpice_Command(cmd)
+
+    def send_circ(self, *args):
+        """Sends a circuit description to the shared ngspice library.
+        A circuit description consists out of an array of commands as they
+        would be found in a spice command file (see ngspice documentation).
+        The last command has to be ".end" to finalize the circuit loading.
+        """
+
+        # We create a class corresponding to an array of null-terminated
+        # strings. C equivalent would be char**.
+        # We add 1 extra element to make sure that the array final element
+        # is a NULL string, as required.
+        CircType = c_char_p * len(args) + 1
+        circ_array = CircType()
+
+        for i in range(len(args)):
+            if not isinstance(args, str):
+                raise ValueError
+            circ_array[i] = args[i].encode('utf-8')
+
+        ret = self.ng.ngSpice_Circ(circ_array)
+        if ret != 0:
+            raise RuntimeError("Error while loading circuit")
 
     def source(self, filepath):
         """Loads (sources) a spice command file."""
