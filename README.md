@@ -1,11 +1,12 @@
 # ngspice-connect
+
 A light Python package to connect with ngspice shared library.
 
 ## Context
 
 I started this small project when I was evaluating the performances of the
 [*Ngspice* Spice simulator](http://ngspice.sourceforge.net/).
-This simulator is a f`kkkkine piece of work, however it is a bit limited if you
+This simulator is a very nice piece of work, however it is a bit limited if you
 want to produce nice plots or when it comes to managing complex testcases.
 
 I thought that it would be great to be able to directly control *Ngspice*
@@ -40,7 +41,7 @@ An appropriate error is raised upon failure.
 
 ### Sourcing a netlist and command file
 
-THe next logical step towards using the simulator is to define the
+The next logical step towards using the simulator is to define the
 circuit to simulate.
 The simplest way to proceed would be to load a file with the required
 circuit description (ie a netlist) and maybe some other stuff such as
@@ -49,5 +50,22 @@ an analysis description by using the `source()` method:
 ```python
 ngx.source("path_to/netlist.cir")
 ```
+
+Note that the `source()` method actually uses the `send_cmd()` method which
+can be used to send any command recognized by *NgSpice* (see *NgSpice*'s
+own documentation).
+The previous step could therefore also be executed as
+
+```python
+ngx.send_cmd("source path_to/netlist.cir")
+```
+
+
+
+
+
+
+
+
 
 *Ongoing work...*
