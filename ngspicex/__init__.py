@@ -19,6 +19,9 @@ from tqdm import tqdm
 from pandas import Series, DataFrame
 
 
+__version__ = "0.0.1"
+
+
 # *****************************************************************************
 # Classes inheriting from ctypes Structure used to describe types passed to
 # callback functions or received from exported functions.
