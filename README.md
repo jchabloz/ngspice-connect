@@ -54,18 +54,30 @@ ngx.source("path_to/netlist.cir")
 Note that the `source()` method actually uses the `send_cmd()` method which
 can be used to send any command recognized by *NgSpice* (see *NgSpice*'s
 own documentation).
-The previous step could therefore also be executed as
+The previous step could therefore alternatively be executed as
 
 ```python
 ngx.send_cmd("source path_to/netlist.cir")
 ```
 
+Another method that can be used instead of sourcing a spice command file
+is to send it line by line by using the `send_circ()` method.
+For example, defining a simple resistive divider with a DC voltage source
+and adding a command to instruct the simulator to perform an operating point
+analysis could be performed in the following way:
 
-
-
-
-
-
-
+```python
+ngx.send_circ(
+    "*Resistive divider",
+    "R1 n1 0 10k",
+    "R2 n2 n1 10k",
+    "V1 n2 0 DC 10",
+    ".op",
+    ".end"
+)
+```
+**Warning**: At the moment, neither the `source()` nor the `send_circ()`
+methods perform any kind of verification on the provided inputs.
+Any unvalid syntax will most likely result in a segmentation fault.
 
 *Ongoing work...*
