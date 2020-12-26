@@ -181,9 +181,10 @@ class NgSpice:
                         self.pbar.close()
                         self.pbar = None
                 else:
-                    self.pbar = tqdm(
-                        file=stdout, desc=name, total=100.0, unit='%')
-                    self.pbar_value = 0.0
+                    if self.use_progress_bar:
+                        self.pbar = tqdm(
+                            file=stdout, desc=name, total=100.0, unit='%')
+                        self.pbar_value = 0.0
             else:
                 self.write(value.decode())
             return 0
@@ -265,7 +266,7 @@ class NgSpice:
 
         return ng_send_init_evt_data_inner
 
-    def __init__(self, libpath=None):
+    def __init__(self, libpath=None, **kwargs):
 
         if libpath:
             self.nglib = libpath
@@ -274,6 +275,13 @@ class NgSpice:
             if not self.nglib:
                 raise ValueError(
                     "Could not find ngspice library in the system")
+
+        if "use_progress_bar" in kwargs:
+            if not isinstance(kwargs["use_progress_bar"], bool):
+                raise TypeError
+            self.use_progress_bar = kwargs["use_progress_bar"]
+        else:
+            self.use_progress_bar = False
 
         self.ng = CDLL(self.nglib)
 
