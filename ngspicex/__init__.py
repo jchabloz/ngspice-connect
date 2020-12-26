@@ -162,6 +162,9 @@ class NgSpice:
     def _ng_send_stat(self):
         """Factory function -- returns a callback function used to receive relevant
         statistics for the currently running simulation.
+        This functions updates a progress bar (implemented with tqdm) if the
+        class is instantiated with the keyword use_progress_bar=True (False by
+        default).
         """
 
         @CFUNCTYPE(c_int, c_char_p, c_int, c_void_p)
@@ -266,16 +269,27 @@ class NgSpice:
 
         return ng_send_init_evt_data_inner
 
-    def __init__(self, libpath=None, **kwargs):
+    def __init__(self, **kwargs):
+        """NgSpice Class
+        Possible keywords arguments:
+        * libpath: defines an alternative path for the shared library. If not
+          defined, the library is automatically searched with the appropriate
+          ctypes mechanism.
+        * use_progress_bar: boolean (default: False). If True, a tqdm progress
+          bar is used to represent the progress statistics sent by the shared
+          library to the "send_stat" callback function.
+        """
 
-        if libpath:
-            self.nglib = libpath
+        # Alternative path to shared library
+        if "libpath" in kwargs:
+            self.nglib = kwargs["libpath"]
         else:
             self.nglib = find_library('ngspice')
             if not self.nglib:
                 raise ValueError(
                     "Could not find ngspice library in the system")
 
+        # Enables usage of tqdm progress bars based on sent statistics
         if "use_progress_bar" in kwargs:
             if not isinstance(kwargs["use_progress_bar"], bool):
                 raise TypeError
