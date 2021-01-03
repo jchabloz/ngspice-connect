@@ -139,8 +139,6 @@ class NgSpice:
     # store them.
     # *************************************************************************
 
-    _callbacks = {}
-
     def _ng_send_char(self):
         """Factory function -- returns a callback function to receive stdout/stderr
         output from libngspice.
@@ -308,6 +306,7 @@ class NgSpice:
 
         # We need to assign the callbacks to inner variables in order to avoid
         # them to get garbage collected and the program to abort with SIGSEV!!!
+        self._callbacks = {}
         self._callbacks["send_char"] = self._ng_send_char()
         self._callbacks["send_stat"] = self._ng_send_stat()
         self._callbacks["exit"] = self._ng_controlled_exit()
