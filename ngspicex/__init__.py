@@ -276,6 +276,9 @@ class NgSpice:
         * use_progress_bar: boolean (default: False). If True, a tqdm progress
           bar is used to represent the progress statistics sent by the shared
           library to the "send_stat" callback function.
+          **Warning** The statistics sent to the callback function seems not to
+          be working for Ngspice version > 31. If you try and use progress bars
+          for later versions, it will not function properly.
         """
 
         # Alternative path to shared library
@@ -337,17 +340,16 @@ class NgSpice:
     def send_circ(self, *args):
         """Sends a circuit description to the shared ngspice library.
         A circuit description consists out of an array of commands as they
-        would be found in a spice command file (see ngspice documentation).
-        The last command has to be ".end" to finalize the circuit loading.
+        would be found in a spice command file (see ngspice documentation). The
+        last command has to be ".end" to finalize the circuit loading.
         !!!Warning: any error in the sent circuit description will likely
-        result in a segmentation fault. There is no parsing of the arguments
-        to assess their validity prior to sending it to the shared library.
+        result in a segmentation fault. There is no parsing of the arguments to
+        assess their validity prior to sending it to the shared library.
         """
 
         # We create a class corresponding to an array of null-terminated
-        # strings. C equivalent would be char**.
-        # We add 1 extra element to make sure that the array final element
-        # is a NULL string, as required.
+        # strings. C equivalent would be char**. We add 1 extra element to make
+        # sure that the array final element is a NULL string, as required.
         CircType = c_char_p * (len(args) + 1)
         circ_array = CircType()
 
@@ -378,7 +380,7 @@ class NgSpice:
         """Returns the name of the current plot."""
         curplot = self.ng.ngSpice_CurPlot
         curplot.restype = c_char_p
-        return curplot()
+        return curplot().decode()
 
     def get_all_plots(self):
         """Returns a list of all the available plots."""
@@ -386,15 +388,15 @@ class NgSpice:
         i = 0
         res = []
         while px[i]:
-            res.append(px[i])
+            res.append(px[i].decode())
             i += 1
         return res
 
     def get_all_vecs(self, plot=None):
         """Returns a list of all available vectors for a given plot.
         Argument:
-        plot: name of the plot, either as a bytes array or string.
-        If plot is not defined or None, the current plot is used.
+        plot: name of the plot, either as a bytes array or string. If plot is
+        not defined or None, the current plot is used.
         """
         if not plot:
             plot = self.get_cur_plot()
@@ -432,10 +434,9 @@ class NgSpice:
         Arguments:
         vector: vector name
         A list of all available vector names for a given plot can be obtained
-        by using the get_all_vecs() function.
-        Using a simple vector name will return values for this vector in the
-        currently active plot.
-        To access vectors from other plots than the current one, use
+        by using the get_all_vecs() function. Using a simple vector name will
+        return values for this vector in the currently active plot. To access
+        vectors from other plots than the current one, use
         <plot_name>.<vector_name> as argument.
         """
         vec_info = self.get_vec_info(vector)
@@ -445,8 +446,8 @@ class NgSpice:
         """Returns all the available vectors for a given plot in a pandas
         DataFrame object.
         Arguments:
-        plot: name of the plot from which to collect available vectors.
-        If plot is not defined or None, the current plot is used.
+        plot: name of the plot from which to collect available vectors. If plot
+        is not defined or None, the current plot is used.
         """
         vec_names = self.get_all_vecs(plot)
         df = DataFrame()
