@@ -478,6 +478,7 @@ class NgSpice:
             if match_branch:
                 vec_name = "i(" + match_branch.group(1) + ")"
             df[vec_name] = vec_info[:]
+        df['temp'] = self.get_temp()  # Add temperature to returned dataframe
         return df
 
     def get_temp(self):
