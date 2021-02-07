@@ -58,6 +58,8 @@ documentation). The previous step could therefore alternatively be executed as
 ngx.send_cmd("source path_to/netlist.cir")
 ```
 
+#### Alternative method
+
 Another method that can be used instead of sourcing a spice command file is to
 send it line by line by using the `send_circ()` method. For example, defining a
 simple resistive divider with a DC voltage source and adding a command to
