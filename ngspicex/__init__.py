@@ -55,6 +55,7 @@ class VectorInfo(Structure):
 
     def __getitem__(self, key):
         """Allows vector data indexing and slicing."""
+        # TODO: Check type and return real or complex data.
         if isinstance(key, int):
             if (key < 0) | (key >= len(self)):
                 raise IndexError
@@ -69,7 +70,13 @@ class VectorInfo(Structure):
                     raise IndexError("Index too large")
         else:
             raise TypeError
-        return self.v_realdata[key]
+
+        # Check if v_realdata is a NULL pointer using bool()
+        # Return None if NULL pointer.
+        if (bool(self.v_realdata)):
+            return self.v_realdata[key]
+        else:
+            return None
 
     def as_series(self):
         """Return a pandas Series object with vector data and name."""
