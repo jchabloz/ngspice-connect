@@ -17,6 +17,7 @@ from os import path
 import re
 from tqdm import tqdm
 from pandas import Series, DataFrame
+from numpy import array
 
 
 __version__ = "0.0.1"
@@ -73,6 +74,10 @@ class VectorInfo(Structure):
     def as_series(self):
         """Return a pandas Series object with vector data and name."""
         return Series(name=self.v_name.decode(), data=self[:])
+
+    def as_array(self):
+        """Return a numpy array object with vector data."""
+        return array(self[:])
 
 
 class VecInfo(Structure):
@@ -414,9 +419,11 @@ class NgSpice:
             i += 1
         return res
 
-    def get_vec_info(self, vector):
+    def _get_vec_info(self, vector):
         """Calls the ngGet_Vec_Info() ngspice exported function and returns a
         VectorInfo structure object.
+        Intended to stay as a private method. Use get_vector or get_all_vectors
+        to access vector data.
         Caveat: each time this method is used, the object actually gets
         replaced.
         """
@@ -439,7 +446,7 @@ class NgSpice:
         vectors from other plots than the current one, use
         <plot_name>.<vector_name> as argument.
         """
-        vec_info = self.get_vec_info(vector)
+        vec_info = self._get_vec_info(vector)
         return vec_info.as_series()
 
     def get_all_vectors(self, plot=None):
@@ -452,7 +459,7 @@ class NgSpice:
         vec_names = self.get_all_vecs(plot)
         df = DataFrame()
         for v in vec_names:
-            vec_info = self.get_vec_info(v)
+            vec_info = self._get_vec_info(v)
             vec_name = vec_info.v_name.decode()
             match_branch = re.search(r"(\w+)#branch$", vec_name)
             if match_branch:
