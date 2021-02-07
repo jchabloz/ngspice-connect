@@ -184,24 +184,25 @@ class NgSpice:
 
             match_percent = re.search(
                 r"(\w+):\s+([0-9]*.?[0-9]*)%\s*$", value.decode())
-            if match_percent:
-                name = match_percent.group(1)
-                percentage = float(match_percent.group(2))
+            if not self._silent:
+                if match_percent:
+                    name = match_percent.group(1)
+                    percentage = float(match_percent.group(2))
 
-                if self.pbar:
-                    self.pbar.update(percentage - self.pbar_value)
-                    self.pbar_value = percentage
-                    if percentage >= 99.9:
-                        self.pbar.update(100.0 - self.pbar_value)
-                        self.pbar.close()
-                        self.pbar = None
+                    if self.pbar:
+                        self.pbar.update(percentage - self.pbar_value)
+                        self.pbar_value = percentage
+                        if percentage >= 99.9:
+                            self.pbar.update(100.0 - self.pbar_value)
+                            self.pbar.close()
+                            self.pbar = None
+                    else:
+                        if self.use_progress_bar:
+                            self.pbar = tqdm(
+                                file=stdout, desc=name, total=100.0, unit='%')
+                            self.pbar_value = 0.0
                 else:
-                    if self.use_progress_bar:
-                        self.pbar = tqdm(
-                            file=stdout, desc=name, total=100.0, unit='%')
-                        self.pbar_value = 0.0
-            else:
-                self.write(value.decode())
+                    self.write(value.decode())
             return 0
 
         return ng_send_stat_inner
@@ -237,7 +238,7 @@ class NgSpice:
 
         @CFUNCTYPE(c_int, POINTER(VecInfoAll), c_int, c_void_p)
         def ng_send_init_data_inner(values, libid, caller):
-            print("ng_send_init_data")
+            self.write("ng_send_init_data")
             return 0
 
         return ng_send_init_data_inner
@@ -249,7 +250,7 @@ class NgSpice:
 
         @CFUNCTYPE(c_int, c_bool, c_int, c_void_p)
         def ng_bg_thread_running_inner(is_running, libid, caller):
-            print("ng_bg_thread_running")
+            self.write("ng_bg_thread_running")
             return 0
 
         return ng_bg_thread_running_inner
@@ -263,7 +264,7 @@ class NgSpice:
                    c_int, c_int, c_void_p)
         def ng_send_evt_data_inner(node_index, sim_time, value, print_value,
                                    data, size, mode, libid, caller):
-            print("ng_send_evt_data")
+            self.write("ng_send_evt_data")
             return 0
 
         return ng_send_evt_data_inner
@@ -276,7 +277,7 @@ class NgSpice:
         @CFUNCTYPE(c_int, c_int, c_int, c_char_p, c_char_p, c_int, c_void_p)
         def ng_send_init_evt_data_inner(node_index, max_index, name, udn_name,
                                         libid, caller):
-            print("ng_send_init_evt_data")
+            self.write("ng_send_init_evt_data")
             return 0
 
         return ng_send_init_evt_data_inner
@@ -386,9 +387,11 @@ class NgSpice:
             raise FileNotFoundError
         self.send_cmd("source " + filepath)
 
-    def run(self):
+    def run(self, silent=False):
         """Sends the run command to ngspice."""
+        self._silent = silent
         self.send_cmd("run")
+        self._silent = False
 
     def quit(self):
         """Sends the quit command to ngspice."""
@@ -478,7 +481,6 @@ class NgSpice:
             if match_branch:
                 vec_name = "i(" + match_branch.group(1) + ")"
             df[vec_name] = vec_info[:]
-        df['temp'] = self.get_temp()  # Add temperature to returned dataframe
         return df
 
     def get_temp(self):
@@ -492,7 +494,10 @@ class NgSpice:
         return temp
 
     def set_temp(self, temp):
-        """Sets the temperature variable."""
+        """Sets the temperature variable.
+        Arguments:
+        temp: Temperature new value.
+        """
 
         self.send_cmd("set temp={}".format(temp))
 
