@@ -481,13 +481,19 @@ class NgSpice:
         return df
 
     def get_temp(self):
+        """Returns the current value of the temperature variable."""
 
         silent_tmp = self._silent
         self._silent = True
         self.send_cmd("echo $temp")
-        temp = int(self._msg)
+        temp = float(self._msg)
         self._silent = silent_tmp
         return temp
+
+    def set_temp(self, temp):
+        """Sets the temperature variable."""
+
+        self.send_cmd("set temp={}".format(temp))
 
 
 # EOF
