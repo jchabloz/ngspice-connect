@@ -135,10 +135,12 @@ class NgSpice:
         """Writes to stdout or progress bar.
         Argument: msg -- Message to be written.
         """
-        if self.pbar:
-            self.pbar.write(msg)
-        else:
-            stdout.write(msg + '\n')
+        self._msg = msg
+        if not self._silent:
+            if self.pbar:
+                self.pbar.write(msg)
+            else:
+                stdout.write(msg + '\n')
 
     # *************************************************************************
     # Callback functions
@@ -312,6 +314,10 @@ class NgSpice:
 
         self.ng = CDLL(self.nglib)
 
+        # Outputs management
+        self._silent = False
+        self._msg = ""
+
         # Progress bar
         self.pbar = None
         self.pbar_value = 0.0
@@ -473,5 +479,15 @@ class NgSpice:
                 vec_name = "i(" + match_branch.group(1) + ")"
             df[vec_name] = vec_info[:]
         return df
+
+    def get_temp(self):
+
+        silent_tmp = self._silent
+        self._silent = True
+        self.send_cmd("echo $temp")
+        temp = int(self._msg)
+        self._silent = silent_tmp
+        return temp
+
 
 # EOF
