@@ -347,16 +347,18 @@ class NgSpice:
             None
         )
 
-    def send_cmd(self, cmd):
+    def send_cmd(self, cmd, silent=False):
         """Sends a spice command to the shared ngspice library."""
         if not isinstance(cmd, bytes):
             if isinstance(cmd, str):
                 cmd = cmd.encode('utf-8')
             else:
                 raise TypeError
+        self._silent = silent
         self.ng.ngSpice_Command(cmd)
+        self._silent = False
 
-    def send_circ(self, *args):
+    def send_circ(self, *args, **kwargs):
         """Sends a circuit description to the shared ngspice library.
         A circuit description consists out of an array of commands as they
         would be found in a spice command file (see ngspice documentation). The
@@ -377,9 +379,12 @@ class NgSpice:
                 raise ValueError
             circ_array[i] = v.encode('utf-8')
 
+        if 'silent' in kwargs:
+            self._silent = kwargs['silent']
         ret = self.ng.ngSpice_Circ(circ_array)
         if ret != 0:
             raise RuntimeError("Error while loading circuit")
+        self._silent = False
 
     def source(self, filepath):
         """Loads (sources) a spice command file."""
@@ -389,9 +394,7 @@ class NgSpice:
 
     def run(self, silent=False):
         """Sends the run command to ngspice."""
-        self._silent = silent
-        self.send_cmd("run")
-        self._silent = False
+        self.send_cmd("run", silent)
 
     def quit(self):
         """Sends the quit command to ngspice."""
@@ -485,12 +488,8 @@ class NgSpice:
 
     def get_temp(self):
         """Returns the current value of the temperature variable."""
-
-        silent_tmp = self._silent
-        self._silent = True
-        self.send_cmd("echo $temp")
+        self.send_cmd("echo $temp", True)
         temp = float(self._msg)
-        self._silent = silent_tmp
         return temp
 
     def set_temp(self, temp):
@@ -498,7 +497,6 @@ class NgSpice:
         Arguments:
         temp: Temperature new value.
         """
-
         self.send_cmd("set temp={}".format(temp))
 
 
