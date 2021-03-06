@@ -348,7 +348,11 @@ class NgSpice:
         )
 
     def send_cmd(self, cmd, silent=False):
-        """Sends a spice command to the shared ngspice library."""
+        """Sends a spice command to the shared ngspice library.
+        Arguments:
+        cmd: Command
+        silent: If True (default=False), no message is sent to stdout/stderr.
+        """
         if not isinstance(cmd, bytes):
             if isinstance(cmd, str):
                 cmd = cmd.encode('utf-8')
