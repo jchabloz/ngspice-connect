@@ -313,7 +313,9 @@ class NgSpice:
         else:
             self.use_progress_bar = False
 
+        # DLL attached
         self.ng = CDLL(self.nglib)
+        self._attached = True
 
         # Outputs management
         self._silent = False
@@ -402,7 +404,11 @@ class NgSpice:
 
     def quit(self):
         """Sends the quit command to ngspice."""
-        self.send_cmd("quit")
+        if self._attached:
+            self.send_cmd("quit")
+            self._attached = False
+        else:
+            print("DLL already detached...")
 
     def get_cur_plot(self):
         """Returns the name of the current plot."""
