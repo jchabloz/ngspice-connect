@@ -399,8 +399,18 @@ class NgSpice:
         self.send_cmd("source " + filepath)
 
     def run(self, silent=False):
-        """Sends the run command to ngspice."""
+        """Sends the run command to ngspice (shortcut).
+        Arguments:
+        silent: If True (default=False), no message is sent to stdout/stderr.
+        """
         self.send_cmd("run", silent)
+
+    def reset(self, silent=True):
+        """Sends the reset command to ngspice (shortcut).
+        Arguments:
+        silent: If True (default=True), no message is sent to stdout/stderr.
+        """
+        self.send_cmd("reset", silent)
 
     def quit(self):
         """Sends the quit command to ngspice."""
