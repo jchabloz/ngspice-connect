@@ -80,4 +80,6 @@ ngx.send_circ(
 perform any kind of verification on the provided inputs. Any unvalid syntax will
 most likely result in a segmentation fault.
 
-*Ongoing work...*
+## Examples
+
+Examples are provided in the form of Jupyter notebooks in the [examples folder](examples).
