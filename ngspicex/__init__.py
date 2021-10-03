@@ -20,7 +20,7 @@ from pandas import Series, DataFrame
 from numpy import array
 
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 
 # *****************************************************************************
@@ -506,18 +506,16 @@ class NgSpice:
             df[vec_name] = vec_info[:]
         return df
 
-    def get_temp(self):
-        """Returns the current value of the temperature variable."""
+    @property
+    def temp(self):
         self.send_cmd("echo $temp", True)
-        temp = float(self._msg)
-        return temp
+        self._temp = float(self._msg)
+        return self._temp
 
-    def set_temp(self, temp):
-        """Sets the temperature variable.
-        Arguments:
-        temp: Temperature new value.
-        """
-        self.send_cmd("set temp={}".format(temp))
+    @temp.setter
+    def temp(self, value):
+        self.send_cmd("set temp={}".format(value))
+        self._temp = value
 
 
 # EOF
