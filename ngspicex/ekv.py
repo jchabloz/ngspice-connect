@@ -4,6 +4,11 @@
 from math import sqrt, log, exp
 
 
+_kB = 1.3806488e-23  # Boltzmann constant
+_T0 = 273.15         # 0 degrees Celsius in Kelvin
+_qe = 1.60217657e-19  # Elementary charge
+
+
 def gekv(i):
     """Normalized EKV transconductance function."""
     return sqrt(0.25 + i) - 0.5
@@ -27,5 +32,13 @@ def fekv(u, prec=1e-9):
             vx = fekv_inv(ix)
             ix += (u - vx)*gekv(ix)
         return ix
+
+
+def ut(temp):
+    """Thermodynamic voltage
+    Arguments:
+    temp = temperature in degrees Celsius"""
+    return _kB*(temp + _T0)/_qe
+
 
 # EOF
