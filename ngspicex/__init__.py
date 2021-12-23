@@ -50,7 +50,7 @@ class VectorInfo(Structure):
         return "VectorInfo structure: " + self.v_name.decode()
 
     def __len__(self):
-        """Allows to query the length of a vector wiht the len() method"""
+        """Allows to query the length of a vector with the len() method"""
         return self.v_length
 
     def __getitem__(self, key):
