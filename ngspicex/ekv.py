@@ -4,9 +4,9 @@
 from math import sqrt, log, exp
 
 
-_kB = 1.3806488e-23  # Boltzmann constant
-_T0 = 273.15         # 0 degrees Celsius in Kelvin
-_qe = 1.60217657e-19  # Elementary charge
+_kB = 1.3806488e-23     # Boltzmann constant
+_T0 = 273.15            # 0 degrees Celsius in Kelvin
+_qe = 1.60217657e-19    # Elementary charge
 
 
 def gekv(i):
@@ -35,9 +35,7 @@ def fekv(u, prec=1e-9):
 
 
 def ut(temp):
-    """Thermodynamic voltage
-    Arguments:
-    temp = temperature in degrees Celsius"""
+    """Thermodynamic voltage"""
     return _kB*(temp + _T0)/_qe
 
 
