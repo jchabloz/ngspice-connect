@@ -20,7 +20,7 @@ from pandas import Series, DataFrame
 from numpy import array
 
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 
 # *****************************************************************************
@@ -133,7 +133,9 @@ class NgSpice:
 
     def write(self, msg):
         """Writes to stdout or progress bar.
-        Argument: msg -- Message to be written.
+
+        Args:
+            msg (str): Message to be written.
         """
         self._msg = msg
         if not self._silent:
@@ -284,16 +286,18 @@ class NgSpice:
 
     def __init__(self, **kwargs):
         """NgSpice Class
-        Possible keywords arguments:
-        * libpath: defines an alternative path for the shared library. If not
-          defined, the library is automatically searched with the appropriate
-          ctypes mechanism.
-        * use_progress_bar: boolean (default: False). If True, a tqdm progress
-          bar is used to represent the progress statistics sent by the shared
-          library to the "send_stat" callback function.
-          **Warning** The statistics sent to the callback function seems not to
-          be working for Ngspice version > 31. If you try and use progress bars
-          for later versions, it will not function properly.
+
+        Args: Possible keywords arguments:
+            libpath (str): defines an alternative path for the shared library.
+                If not defined, the library is automatically searched with the
+                appropriate ctypes mechanism.
+            use_progress_bar (bool): (default: False). If True, a tqdm progress
+                bar is used to represent the progress statistics sent by the
+                shared library to the "send_stat" callback function.
+                **Warning** The statistics sent to the callback function seems
+                not to be working for Ngspice version > 31. If you try and use
+                progress bars for later versions, it will not function
+                properly.
         """
 
         # Alternative path to shared library
@@ -351,9 +355,11 @@ class NgSpice:
 
     def send_cmd(self, cmd, silent=False):
         """Sends a spice command to the shared ngspice library.
-        Arguments:
-        cmd: Command
-        silent: If True (default=False), no message is sent to stdout/stderr.
+
+        Args:
+            cmd  (str): Command
+            silent (bool): If True (default=False), no message is sent to
+                stdout/stderr.
         """
         if not isinstance(cmd, bytes):
             if isinstance(cmd, str):
@@ -366,12 +372,21 @@ class NgSpice:
 
     def send_circ(self, *args, **kwargs):
         """Sends a circuit description to the shared ngspice library.
+
         A circuit description consists out of an array of commands as they
         would be found in a spice command file (see ngspice documentation). The
         last command has to be ".end" to finalize the circuit loading.
         !!!Warning: any error in the sent circuit description will likely
         result in a segmentation fault. There is no parsing of the arguments to
         assess their validity prior to sending it to the shared library.
+
+        Args:
+            cmd1, cmd2, ...  or cmd[]: Valid ngspice circuit commands
+            silent (bool): executes the function in silent mode
+
+        Raises:
+            TypeError: One of the commands is not a string
+            RuntimeError: Error while loading circuit commands
         """
 
         # We create a class corresponding to an array of null-terminated
@@ -382,7 +397,7 @@ class NgSpice:
 
         for i, v in enumerate(args):
             if not isinstance(v, str):
-                raise ValueError
+                raise TypeError
             circ_array[i] = v.encode('utf-8')
 
         if 'silent' in kwargs:
@@ -393,15 +408,25 @@ class NgSpice:
         self._silent = False
 
     def source(self, filepath):
-        """Loads (sources) a spice command file."""
+        """Loads (sources) a spice command file.
+
+        Args:
+            filepath: Path to source spice command file
+
+        Raises:
+            FileNotFoundError: File not found
+        """
         if not path.isfile(filepath):
             raise FileNotFoundError
         self.send_cmd("source " + filepath)
 
     def run(self, rawfile="", silent=False):
         """Sends the run command to ngspice (shortcut).
-        Arguments:
-        silent: If True (default=False), no message is sent to stdout/stderr.
+
+        Args:
+            rawfile (str): Send command run *rawfile*  (default="")
+            silent (bool): If True (default=False), no message is sent to
+                stdout/stderr.
         """
         if rawfile != "":
             self.send_cmd("run " + rawfile, silent)
@@ -410,8 +435,10 @@ class NgSpice:
 
     def reset(self, silent=True):
         """Sends the reset command to ngspice (shortcut).
-        Arguments:
-        silent: If True (default=True), no message is sent to stdout/stderr.
+
+        Args:
+            silent: If True (default=True), no message is sent to
+                stdout/stderr.
         """
         self.send_cmd("reset", silent)
 
@@ -441,9 +468,13 @@ class NgSpice:
 
     def get_all_vecs(self, plot=None):
         """Returns a list of all available vectors for a given plot.
-        Argument:
-        plot: name of the plot, either as a bytes array or string. If plot is
-        not defined or None, the current plot is used.
+
+        Args:
+            plot (str): name of the plot, either as a bytes array or string. If
+            plot is not defined or None, the current plot is used.
+
+        Returns:
+            res (list): List of vectors
         """
         if not plot:
             plot = self.get_cur_plot()
@@ -462,12 +493,19 @@ class NgSpice:
         return res
 
     def _get_vec_info(self, vector):
-        """Calls the ngGet_Vec_Info() ngspice exported function and returns a
-        VectorInfo structure object.
-        Intended to stay as a private method. Use get_vector or get_all_vectors
-        to access vector data.
+        """Calls ngGet_Vec_Info()
+
+        Calls the ngGet_Vec_Info() ngspice exported function and returns a
+        VectorInfo structure object. Intended to stay as a private method. Use
+        get_vector() or get_all_vectors() instead to access vector data.
         Caveat: each time this method is used, the object actually gets
         replaced.
+
+        Args:
+            vector (bytes or str): Targeted vector
+
+        Returns:
+            vec_info: VectorInfo structure instance
         """
         if not isinstance(vector, bytes):
             if isinstance(vector, str):
@@ -480,23 +518,34 @@ class NgSpice:
 
     def get_vector(self, vector):
         """Returns a simulated vector as a pandas Series object.
-        Arguments:
-        vector: vector name
+
         A list of all available vector names for a given plot can be obtained
         by using the get_all_vecs() function. Using a simple vector name will
         return values for this vector in the currently active plot. To access
         vectors from other plots than the current one, use
         <plot_name>.<vector_name> as argument.
+
+        Args:
+            vector (str or bytes): Vector name
+
+        Returns:
+            vec_info (pandas Series): Vector data
         """
         vec_info = self._get_vec_info(vector)
         return vec_info.as_series()
 
     def get_all_vectors(self, plot=None):
-        """Returns all the available vectors for a given plot in a pandas
+        """Returns all the available vectors for a given plot
+
+        Returns all the available vectors for a given plot in a pandas
         DataFrame object.
-        Arguments:
-        plot: name of the plot from which to collect available vectors. If plot
-        is not defined or None, the current plot is used.
+
+        Args:
+            plot: name of the plot from which to collect available vectors. If
+                plot is not defined or None, the current plot is used.
+
+        Returns:
+            df: Pandas DataFrame instance with all available vectors
         """
         vec_names = self.get_all_vecs(plot)
         df = DataFrame()
@@ -517,7 +566,7 @@ class NgSpice:
 
     @temp.setter
     def temp(self, value):
-        self.send_cmd("set temp={}".format(value))
+        self.send_cmd(f"set temp={value}")
         self._temp = value
 
 
