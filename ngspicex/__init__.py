@@ -2,10 +2,6 @@
 # This python script uses ctypes to implement C bindings for the shared library
 # provided by ngspice. It allows to run a simulation and use all the power of
 # Python to post-process and plots the results.
-#
-# References:
-# [1] https://docs.python.org/3.8/library/ctypes.html#callback-functions
-# [2] https://stackoverflow.com/questions/7259794/
 # *****************************************************************************
 from ctypes import Structure
 from ctypes import c_double, c_char_p, c_short, c_int, c_bool, c_void_p
@@ -153,6 +149,9 @@ class NgSpice:
     # factory needs to be assigned to an inner variable in order for it not to
     # get garbage collected. In our case, I use the self._callbacks[] array to
     # store them.
+    # References:
+    # [1] https://docs.python.org/3.8/library/ctypes.html#callback-functions
+    # [2] https://stackoverflow.com/questions/7259794/
     # *************************************************************************
 
     def _ng_send_char(self):
@@ -561,13 +560,10 @@ class NgSpice:
     @property
     def temp(self):
         self.send_cmd("echo $temp", True)
-        self._temp = float(self._msg)
-        return self._temp
+        return float(self._msg)
 
     @temp.setter
     def temp(self, value):
         self.send_cmd(f"set temp={value}")
-        self._temp = value
-
 
 # EOF
