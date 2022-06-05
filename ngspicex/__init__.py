@@ -1,5 +1,5 @@
 # *****************************************************************************
-# This python script uses ctypes to implement C bindings for the shared library
+# This python module uses ctypes to implement C bindings for the shared library
 # provided by ngspice. It allows to run a simulation and use all the power of
 # Python to post-process and plots the results.
 # *****************************************************************************
