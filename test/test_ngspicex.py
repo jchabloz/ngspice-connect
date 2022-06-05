@@ -32,3 +32,21 @@ def test_ngspice_send_cmd(ngx, capsys):
 
     with pytest.raises(TypeError):
         ngx.send_cmd(1)
+
+
+def test_send_circ(ngx, capsys):
+    """Tests NgSpice send_circ method
+
+    This tests attempts to create a simple resistive divider
+    circuit.
+    """
+
+    ngx.send_circ(
+        "* Test resdiv circuit",
+        "R1 0 n1 10k",
+        "R2 n1 n2 10k",
+        ".end"
+    )
+    _ = capsys.readouterr()
+    ngx.send_cmd("setcirc 1")
+    assert capsys.readouterr().out == ' * test resdiv circuit\n'
