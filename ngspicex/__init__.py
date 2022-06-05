@@ -8,7 +8,7 @@ from ctypes import c_double, c_char_p, c_short, c_int, c_bool, c_void_p
 from ctypes import POINTER, CFUNCTYPE, CDLL, cast
 from ctypes.util import find_library
 
-from sys import stdout
+import sys
 from os import path
 import re
 from tqdm import tqdm
@@ -138,7 +138,7 @@ class NgSpice:
             if self.pbar:
                 self.pbar.write(msg)
             else:
-                stdout.write(msg + '\n')
+                sys.stdout.write(msg + '\n')
 
     # *************************************************************************
     # Callback functions
@@ -200,7 +200,7 @@ class NgSpice:
                     else:
                         if self.use_progress_bar:
                             self.pbar = tqdm(
-                                file=stdout, desc=name, total=100.0, unit='%')
+                                file=sys.stdout, desc=name, total=100.0, unit='%')
                             self.pbar_value = 0.0
                 else:
                     self.write(value.decode())
