@@ -199,8 +199,8 @@ class NgSpice:
                             self.pbar = None
                     else:
                         if self.use_progress_bar:
-                            self.pbar = tqdm(
-                                file=sys.stdout, desc=name, total=100.0, unit='%')
+                            self.pbar = tqdm(file=sys.stdout, desc=name,
+                                             total=100.0, unit='%')
                             self.pbar_value = 0.0
                 else:
                     self.write(value.decode())
@@ -324,7 +324,7 @@ class NgSpice:
         self._silent = False
         self._msg = ""
 
-        # Progress bar
+        # Progress bar>
         self.pbar = None
         self.pbar_value = 0.0
 
@@ -375,6 +375,7 @@ class NgSpice:
         A circuit description consists out of an array of commands as they
         would be found in a spice command file (see ngspice documentation). The
         last command has to be ".end" to finalize the circuit loading.
+
         !!!Warning: any error in the sent circuit description will likely
         result in a segmentation fault. There is no parsing of the arguments to
         assess their validity prior to sending it to the shared library.
