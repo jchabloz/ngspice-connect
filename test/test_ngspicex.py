@@ -1,6 +1,11 @@
 from ngspicex import NgSpice
 import pytest
 
+# Note
+# To run with coverage, use
+# coverage run --source=../ngspicex --branch -m pytest
+# coverage report
+
 
 @pytest.fixture
 def ngx():
@@ -17,6 +22,12 @@ def test_ngspice_write(ngx, capsys):
     str_test = "This is a test string"
     ngx.write(str_test)
     assert capsys.readouterr().out == str_test + '\n'
+    assert ngx._msg == str_test
+    ngx._silent = True
+    ngx.write(str_test)
+    assert capsys.readouterr().out == ''
+    assert ngx._msg == str_test
+    ngx._silent = False
 
 
 def test_ngspice_send_cmd(ngx, capsys):
@@ -50,3 +61,15 @@ def test_send_circ(ngx, capsys):
     _ = capsys.readouterr()
     ngx.send_cmd("setcirc 1")
     assert capsys.readouterr().out == ' * test resdiv circuit\n'
+
+
+def test_source(ngx, capsys):
+    """Tests NgSpice source method"""
+
+    ngx.source("test/data/circuit_test_0.cir")
+    _ = capsys.readouterr()
+    ngx.send_cmd("setcirc 1")
+    assert capsys.readouterr().out == ' * test circuit 0\n'
+
+    with pytest.raises(FileNotFoundError):
+        ngx.source("data/non_existent_file.txt")
