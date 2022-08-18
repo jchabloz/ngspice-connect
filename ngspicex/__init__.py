@@ -420,18 +420,24 @@ class NgSpice:
             raise FileNotFoundError
         self.send_cmd("source " + filepath)
 
-    def run(self, rawfile="", silent=False):
+    def run_file(self, rawfile, silent=False):
         """Sends the run command to ngspice (shortcut).
 
         Args:
-            rawfile (str): Send command run *rawfile*  (default="")
+            rawfile (str): Send command run *rawfile*
             silent (bool): If True (default=False), no message is sent to
                 stdout/stderr.
         """
-        if rawfile != "":
-            self.send_cmd("run " + rawfile, silent)
-        else:
-            self.send_cmd("run", silent)
+        self.send_cmd("run " + rawfile, silent)
+
+    def run(self, silent=False):
+        """Sends the run command to ngspice (shortcut).
+
+        Args:
+            silent (bool): If True (default=False), no message is sent to
+                stdout/stderr.
+        """
+        self.send_cmd("run", silent)
 
     def reset(self, silent=True):
         """Sends the reset command to ngspice (shortcut).
