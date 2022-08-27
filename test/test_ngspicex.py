@@ -1,5 +1,6 @@
 from ngspicex import NgSpice
 import pytest
+import os
 
 # Note
 # To run with coverage, use
@@ -9,6 +10,7 @@ import pytest
 
 @pytest.fixture
 def ngx():
+    """Return an instance of ngspicex.NgSpice class."""
     return NgSpice()
 
 
@@ -66,10 +68,11 @@ def test_send_circ(ngx, capsys):
 def test_source(ngx, capsys):
     """Tests NgSpice source method"""
 
-    ngx.source("test/data/circuit_test_0.cir")
+    ngx.source(os.path.join(os.path.dirname(__file__), "data/circuit_test_0.cir"))
     _ = capsys.readouterr()
     ngx.send_cmd("setcirc 1")
     assert capsys.readouterr().out == ' * test circuit 0\n'
 
     with pytest.raises(FileNotFoundError):
         ngx.source("data/non_existent_file.txt")
+
